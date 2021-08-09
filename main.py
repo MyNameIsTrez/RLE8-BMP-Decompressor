@@ -44,6 +44,7 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 	decompressed = [[] for _ in range(height)]
 
 	byte_index = -1
+	x = -1 # Tracking the x value in case of delta bytes.
 	y = height - 1
 
 	while True:
@@ -56,18 +57,45 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 			byte_index += 1
 			special_byte = rle_bytes[byte_index] # Get the second byte.
 
-			if special_byte == 0:
+			if special_byte == 0: # End of line.
+				# Makes sure that the 2D array keeps a homogeneous shape. Assumes the palette's first color represents transparency.
+				for _ in range(width - x - 1):
+					decompressed[y].append(0)
+
+				x = -1
 				y -= 1
-			elif special_byte == 1:
+			elif special_byte == 1: # End of bitmap.
+				# Makes sure that the 2D array keeps a homogeneous shape. Assumes the palette's first color represents transparency.
+				for _ in range(width - x - 1):
+					decompressed[y].append(0)
+
 				return decompressed
-			elif special_byte == 2:
-				# TODO: Try to make an example RLE8 BMP with delta by saving a PNG in GIMP to it.
-				# TODO: Wait on MS pull request feedback on whether delta goes up or down.
-				raise Exception("The RLE8 BMP has a delta byte, but I didn't write code to handle that yet!")
+			elif special_byte == 2: # Delta. The 2 bytes following the escape contain unsigned values indicating the offset to the right and up of the next pixel from the current position.
+				byte_index += 1
+				offset_x = rle_bytes[byte_index]
+				byte_index += 1
+				offset_y = rle_bytes[byte_index]
+
+				for _ in range(offset_x):
+					if x == width - 1:
+						x = -1
+						y -= 1
+
+					x += 1
+					decompressed[y].append(0)
+				
+				for _ in range(offset_y * width):
+					if x == width - 1:
+						x = -1
+						y -= 1
+
+					x += 1
+					decompressed[y].append(0)
 			else: # Called "absolute mode" in the MS Docs.
 				following = special_byte
 
 				for _ in range(following):
+					x += 1
 					byte_index += 1
 					palette_index = rle_bytes[byte_index]
 					decompressed[y].append(palette_index)
@@ -84,6 +112,7 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 			palette_index = rle_bytes[byte_index]
 
 			for _ in range(repeat):
+				x += 1
 				decompressed[y].append(palette_index)
 
 
