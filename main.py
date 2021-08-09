@@ -117,10 +117,7 @@ def get_pixel_index_array_bytes(img):
 def get_pixel_array(img, width, height, palette):
 	pixel_index_array_bytes = get_pixel_index_array_bytes(img)
 	decoded_pixel_index_array = get_decoded_pixel_index_array(pixel_index_array_bytes, width, height)
-
-
-
-	return np.array(decoded_pixel_index_array)
+	return np.array(decoded_pixel_index_array, dtype="uint8")
 
 
 def is_png_paletted(img):
@@ -140,7 +137,11 @@ def get_palette(img):
 	img.seek(0x36)
 	# TODO: This won't work for palettes that don't have an alpha layer or that don't have exactly 256 palette colors.
 	palette = list(img.read(4 * 256))
-	del palette[4-1::4] # Removes the alpha values.
+	del palette[3::4] # Removes the alpha values.
+
+	# Swaps the R and B values.
+	palette[0:-2:3], palette[2::3] = palette[2::3], palette[0:-2:3]
+
 	return palette
 
 
@@ -157,9 +158,10 @@ if __name__ == "__main__":
 
 					palette = get_palette(img)
 					# print(palette)
+					
 					pixel_array = get_pixel_array(img, width, height, palette)
 					
-					print(pixel_array)
+					# print(pixel_array)
 					
 					img = Image.fromarray(pixel_array, mode="P")
 					img.putpalette(palette)
