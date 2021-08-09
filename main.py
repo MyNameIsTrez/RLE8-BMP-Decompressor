@@ -66,8 +66,16 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 				y -= 1
 			elif special_byte == 1: # End of bitmap.
 				# Makes sure that the 2D array keeps a homogeneous shape. Assumes the palette's first color represents transparency.
-				if x != -1 and y != -1: # If the file ends with "00 00 00 01" then the "End of line." special_byte == 0 if-case will mess this for-loop up.
+				if x != -1 and y != -1: # If the file ends with "00 00 00 01"/"End of line." then the special_byte == 0 if-case will mess up the below for-loop.
 					for _ in range(width - x - 1):
+						decompressed[y].append(0)
+					
+					for _ in range(y * width):
+						if x == width - 1:
+							x = -1
+							y -= 1
+
+						x += 1
 						decompressed[y].append(0)
 
 				return decompressed
@@ -85,7 +93,7 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 					x += 1
 					decompressed[y].append(0)
 				
-				for _ in range(offset_y * width):
+				for _ in range(offset_y * width): # TODO: Does this work when offset_y > 1?
 					if x == width - 1:
 						x = -1
 						y -= 1

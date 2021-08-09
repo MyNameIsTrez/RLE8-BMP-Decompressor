@@ -2,7 +2,14 @@
 
 ## What is this?
 
-A Python program that convert RLE8 compressed BMPs to paletted PNGs.
+This is a Python program that convert RLE8 compressed BMPs to paletted PNGs.
+
+## How to use this program
+
+Use `py main.py` to convert RLE8 BMPs that are in the `Input` folder to paletted PNGs that will be put in the `Output` folder.
+Any files that aren't RLE8 BMPs will be skipped, so if your BMP isn't being converted then it isn't RLE8 compressed.
+
+In the `Other` folder you'll find BMPs that can be moved to the `Input` folder to verify whether the program still works on a bunch of edge cases.
 
 ## Limitations
 
