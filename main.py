@@ -63,8 +63,7 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 			elif special_byte == 2:
 				# TODO: Try to make an example RLE8 BMP with delta by saving a PNG in GIMP to it.
 				# TODO: Wait on MS pull request feedback on whether delta goes up or down.
-				raise "The RLE8 BMP has a delta byte, but I didn't write code for that yet!"
-				pass
+				raise Exception("The RLE8 BMP has a delta byte, but I didn't write code to handle that yet!")
 			else: # Called "absolute mode" in the MS Docs.
 				following = special_byte
 
