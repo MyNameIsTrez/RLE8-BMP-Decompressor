@@ -133,7 +133,7 @@ def get_pixel_array(img, width, height, palette):
 
 def get_palette(img):
 	img.seek(0x36)
-	# TODO: This won't work for palettes that don't have an alpha layer or that don't have exactly 256 palette colors.
+	# TODO: This program won't work for BMPs with palettes that don't have an alpha layer, or that don't have exactly 256 palette colors.
 	palette = list(img.read(4 * 256))
 	del palette[3::4] # Removes the alpha values.
 
