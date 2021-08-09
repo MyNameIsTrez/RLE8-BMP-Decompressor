@@ -66,8 +66,9 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 				y -= 1
 			elif special_byte == 1: # End of bitmap.
 				# Makes sure that the 2D array keeps a homogeneous shape. Assumes the palette's first color represents transparency.
-				for _ in range(width - x - 1):
-					decompressed[y].append(0)
+				if x != -1 and y != -1: # If the file ends with "00 00 00 01" then the "End of line." special_byte == 0 if-case will mess this for-loop up.
+					for _ in range(width - x - 1):
+						decompressed[y].append(0)
 
 				return decompressed
 			elif special_byte == 2: # Delta. The 2 bytes following the escape contain unsigned values indicating the offset to the right and up of the next pixel from the current position.
