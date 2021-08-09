@@ -4,18 +4,8 @@ from pathlib import Path
 import numpy as np
 
 
-# def get_bmp_bits_per_pixel(img):
-# 	img.seek(0x1C)
-# 	return int.from_bytes(img.read(2), byteorder="little")
-
-
-# def is_bmp_indexed(img):
-# 	return get_bmp_bits_per_pixel(img) == 8
-
-
-# print(is_bmp_indexed("input/rgb_image.bmp"))
-# print(is_bmp_indexed("input/indexed_image.bmp"))
-# print(is_bmp_indexed("input/actual_rgb_image.png"))
+def is_bmp(full_filename):
+	return Path(full_filename).suffix.lower() == ".bmp"
 
 
 def get_bmp_compression_method(img):
@@ -36,14 +26,6 @@ def get_bmp_pixel_index_array_offset(img):
 def get_bmp_pixel_index_array_byte_size(img):
 	img.seek(0x22)
 	return int.from_bytes(img.read(4), byteorder="little")
-
-
-# def is_image(full_filename):
-# 	return full_filename.lower().endswith((".bmp", ".png"))
-
-
-# def is_bmp(full_filename):
-# 	return os.path.splitext(full_filename)[1] == ".bmp"
 
 
 def get_bmp_width(img):
@@ -120,19 +102,6 @@ def get_pixel_array(img, width, height, palette):
 	return np.array(decoded_pixel_index_array, dtype="uint8")
 
 
-def is_png_paletted(img):
-	img.seek(0x19)
-	return int.from_bytes(img.read(1), byteorder="big") == 3
-
-
-# print(is_png_paletted("input/regular_rgb_image.png"))
-# print(is_png_paletted("input/paletted_rgb_image.png"))
-
-
-# print(is_png_paletted("output/indexed_image.png"))
-# print(is_png_paletted("output/rgb_image.png"))
-
-
 def get_palette(img):
 	img.seek(0x36)
 	# TODO: This won't work for palettes that don't have an alpha layer or that don't have exactly 256 palette colors.
@@ -145,26 +114,27 @@ def get_palette(img):
 	return palette
 
 
+def convert_rle8_bmp_to_png(img, input_filepath, output_parent_filepath):
+	width = get_bmp_width(img)
+	height = get_bmp_height(img)
+
+	palette = get_palette(img)
+	
+	pixel_array = get_pixel_array(img, width, height, palette)
+	
+	img = Image.fromarray(pixel_array, mode="P")
+	img.putpalette(palette)
+
+	output_filepath = output_parent_filepath / Path(*input_filepath.parts[1:]).with_suffix(".png")
+	img.save(output_filepath)
+
+
 if __name__ == "__main__":
 	# Opening an RLE8 BMP with Pillow causes a console error, so instead this code reads the pixels and palette of the RLE8 BMP.
-	for input_parent_folder_path, subfolders, subfiles in os.walk("input"):
+	for input_parent_folder_path, subfolders, subfiles in os.walk("Input"):
 		for filename in subfiles:
-			input_filepath = Path(input_parent_folder_path) / filename
-			with open(input_filepath, "rb") as img:
-				# print(get_bmp_compression_method(img))
-				if is_bmp_rle8_compressed(img):
-					width = get_bmp_width(img)
-					height = get_bmp_height(img)
-
-					palette = get_palette(img)
-					# print(palette)
-					
-					pixel_array = get_pixel_array(img, width, height, palette)
-					
-					# print(pixel_array)
-					
-					img = Image.fromarray(pixel_array, mode="P")
-					img.putpalette(palette)
-
-					output_filepath = "output" / Path(*input_filepath.parts[1:]).with_suffix(".png")
-					img.save(output_filepath)
+			if is_bmp(filename):
+				input_filepath = Path(input_parent_folder_path) / filename
+				with open(input_filepath, "rb") as img:
+					if is_bmp_rle8_compressed(img):
+						convert_rle8_bmp_to_png(img, input_filepath, "Output")
