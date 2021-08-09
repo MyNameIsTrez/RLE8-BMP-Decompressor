@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 from pathlib import Path
+import numpy as np
 
 
 # def get_bmp_bits_per_pixel(img):
@@ -26,13 +27,13 @@ def is_bmp_rle8_compressed(img):
 	return get_bmp_compression_method(img) == 1
 
 
-def get_bmp_pixel_array_offset(img):
+def get_bmp_pixel_index_array_offset(img):
 	img.seek(0xA)
 	# Start of the rle8.bmp example's pixel array: 08 00 03 F8
 	return int.from_bytes(img.read(4), byteorder="little")
 
 
-def get_bmp_pixel_array_byte_size(img):
+def get_bmp_pixel_index_array_byte_size(img):
 	img.seek(0x22)
 	return int.from_bytes(img.read(4), byteorder="little")
 
@@ -57,10 +58,7 @@ def get_bmp_height(img):
 
 # See the MS docs for more information on how the BI_RLE8 decoding works:
 # https://docs.microsoft.com/en-us/windows/win32/gdi/bitmap-compression
-def get_decoded_rle_bmp_pixel_array(rle_bytes):
-	width = get_bmp_width(img)
-	height = get_bmp_height(img)
-
+def get_decoded_pixel_index_array(rle_bytes, width, height):
 	decompressed = [[] for _ in range(height)]
 
 	byte_index = -1
@@ -97,7 +95,6 @@ def get_decoded_rle_bmp_pixel_array(rle_bytes):
 			# Adding padding so each run has an even number of bytes.
 			if not run_even:
 				byte_index += 1
-				decompressed[y].append(0)
 
 		else: # Called "encoded mode" in the MS Docs.
 			repeat = byte
@@ -109,16 +106,21 @@ def get_decoded_rle_bmp_pixel_array(rle_bytes):
 				decompressed[y].append(palette_index)
 
 
-def get_pixel_array_bytes(img):
-	pixel_array_offset = get_bmp_pixel_array_offset(img)
-	pixel_array_byte_size = get_bmp_pixel_array_byte_size(img)
-	img.seek(pixel_array_offset)
-	return img.read(pixel_array_byte_size)
+def get_pixel_index_array_bytes(img):
+	pixel_index_array_offset = get_bmp_pixel_index_array_offset(img)
+	pixel_index_array_byte_size = get_bmp_pixel_index_array_byte_size(img)
+
+	img.seek(pixel_index_array_offset)
+	return img.read(pixel_index_array_byte_size)
 
 
-def get_rle_bmp_pixel_array(img):
-	pixel_array_bytes = get_pixel_array_bytes(img)
-	return get_decoded_rle_bmp_pixel_array(pixel_array_bytes)
+def get_pixel_array(img, width, height, palette):
+	pixel_index_array_bytes = get_pixel_index_array_bytes(img)
+	decoded_pixel_index_array = get_decoded_pixel_index_array(pixel_index_array_bytes, width, height)
+
+
+
+	return np.array(decoded_pixel_index_array)
 
 
 def is_png_paletted(img):
@@ -134,20 +136,33 @@ def is_png_paletted(img):
 # print(is_png_paletted("output/rgb_image.png"))
 
 
+def get_palette(img):
+	img.seek(0x36)
+	# TODO: This won't work for palettes that don't have an alpha layer or that don't have exactly 256 palette colors.
+	palette = list(img.read(4 * 256))
+	del palette[4-1::4] # Removes the alpha values.
+	return palette
+
+
 if __name__ == "__main__":
+	# Opening an RLE8 BMP with Pillow causes a console error, so instead this code reads the pixels and palette of the RLE8 BMP.
 	for input_parent_folder_path, subfolders, subfiles in os.walk("input"):
 		for filename in subfiles:
 			input_filepath = Path(input_parent_folder_path) / filename
 			with open(input_filepath, "rb") as img:
 				# print(get_bmp_compression_method(img))
 				if is_bmp_rle8_compressed(img):
-					print(input_filepath, get_rle_bmp_pixel_array(img), "\n")
-					# get_rle_bmp_pixel_array(img)
-					# output_filepath = "output" / Path(*input_filepath.parts[1:]).with_suffix(".png")
+					width = get_bmp_width(img)
+					height = get_bmp_height(img)
 
-					# print(output_filepath, output_filepath.with_suffix(".png"))
-					# if is_bmp_indexed(input_filepath):
-						# print(filename)
+					palette = get_palette(img)
+					# print(palette)
+					pixel_array = get_pixel_array(img, width, height, palette)
+					
+					print(pixel_array)
+					
+					img = Image.fromarray(pixel_array, mode="P")
+					img.putpalette(palette)
 
-					# Image.open(input_filepath).save(output_filepath)
-					# print(output_filepath, is_png_paletted(output_filepath))
+					output_filepath = "output" / Path(*input_filepath.parts[1:]).with_suffix(".png")
+					img.save(output_filepath)
