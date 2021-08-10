@@ -58,6 +58,8 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 			special_byte = rle_bytes[byte_index] # Get the second byte.
 
 			if special_byte == 0: # End of line.
+				# print(f"End of line at {x, y}, added {width - x - 1} times 0.")
+
 				# Makes sure that the 2D array keeps a homogeneous shape. Assumes the palette's first color represents transparency.
 				for _ in range(width - x - 1):
 					decompressed[y].append(0)
@@ -65,17 +67,23 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 				x = -1
 				y -= 1
 			elif special_byte == 1: # End of bitmap.
+				# print(f"End of bitmap at {x, y}.")
+
 				# Makes sure that the 2D array keeps a homogeneous shape. Assumes the palette's first color represents transparency.
-				if x != -1 and y != -1: # If the file ends with "00 00 00 01"/"End of line." then the special_byte == 0 if-case will mess up the below for-loop.
+				if x != -1 and y != -1: # If the file ends with "00 00 00 01" then the special_byte == 0 if-case will mess up the below for-loop.
+					# print("Filling the last empty pixels in this row with {} times 0.")
 					for _ in range(width - x - 1):
+						x += 1
 						decompressed[y].append(0)
-					
+
+					# print("Adding rows of 0.")
 					for _ in range(y * width):
 						if x == width - 1:
 							x = -1
 							y -= 1
 
 						x += 1
+						# print(x, y)
 						decompressed[y].append(0)
 
 				return decompressed
@@ -136,8 +144,16 @@ def get_pixel_index_array_bytes(img):
 def get_pixel_array(img, width, height, palette):
 	pixel_index_array_bytes = get_pixel_index_array_bytes(img)
 	decoded_pixel_index_array = get_decoded_pixel_index_array(pixel_index_array_bytes, width, height)
-	return np.array(decoded_pixel_index_array, dtype="uint8")
 
+	# print(len(decoded_pixel_index_array[5]), decoded_pixel_index_array[5])
+	# for index, row in enumerate(decoded_pixel_index_array):
+	# 	print(index, len(row))
+		# print(len(row), row)
+	
+	# TODO: Raise a custom ValueError exception for:
+	#       "ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (143,) + inhomogeneous part."
+	numpy_pixel_index_array = np.array(decoded_pixel_index_array, dtype="uint8")
+	return numpy_pixel_index_array
 
 def get_palette(img):
 	img.seek(0x36)
