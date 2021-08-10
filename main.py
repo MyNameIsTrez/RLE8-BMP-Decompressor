@@ -93,6 +93,13 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 				byte_index += 1
 				offset_y = rle_bytes[byte_index]
 
+				# When there's an end-of-line and a delta afterwards, the RLE8 delta's offsets are from before the end-of-line (x, y) movement
+				# of going all the way to the left and up one is applied. 
+				if x == -1:
+					x = width - 1
+					y = y + 1
+				# print((x, y), (x, y), (offset_x, offset_y))
+
 				for _ in range(offset_x):
 					if x == width - 1:
 						x = -1
@@ -100,7 +107,7 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 
 					x += 1
 					decompressed[y].append(0)
-				
+
 				for _ in range(offset_y * width): # TODO: Does this work when offset_y > 1?
 					if x == width - 1:
 						x = -1
@@ -108,6 +115,13 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 
 					x += 1
 					decompressed[y].append(0)
+
+					# if y == 71:
+					# 	print(f"Vertically placed 0 at {x, y}.")
+
+				if x == width - 1:
+					x = -1
+					y -= 1
 			else: # Called "absolute mode" in the MS Docs.
 				following = special_byte
 
@@ -145,10 +159,11 @@ def get_pixel_array(img, width, height, palette):
 	pixel_index_array_bytes = get_pixel_index_array_bytes(img)
 	decoded_pixel_index_array = get_decoded_pixel_index_array(pixel_index_array_bytes, width, height)
 
-	# print(len(decoded_pixel_index_array[5]), decoded_pixel_index_array[5])
 	# for index, row in enumerate(decoded_pixel_index_array):
 	# 	print(index, len(row))
-		# print(len(row), row)
+	# print("")
+	# print(len(decoded_pixel_index_array[71]), decoded_pixel_index_array[71])
+	# print("")
 	
 	# TODO: Raise a custom ValueError exception for:
 	#       "ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (143,) + inhomogeneous part."
