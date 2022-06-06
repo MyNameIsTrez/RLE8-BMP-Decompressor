@@ -12,9 +12,12 @@ def main():
 		for filename in subfiles:
 			if bmp_to_png.is_bmp(filename):
 				input_filepath = Path(input_parent_folder_path) / filename
+
 				with open(input_filepath, "rb") as img:
 					if bmp_to_png.is_bmp_rle8_compressed(img):
-						bmp_to_png.convert_rle8_bmp_to_png(img, input_filepath, "Output")
+						output_filepath = "Output" / Path(*input_filepath.parts[1:]).with_suffix(".png")
+
+						bmp_to_png.convert_rle8_bmp_to_png(img, output_filepath)
 
 
 if __name__ == "__main__":

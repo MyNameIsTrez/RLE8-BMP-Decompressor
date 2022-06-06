@@ -170,6 +170,7 @@ def get_pixel_array(img, width, height, palette):
 	numpy_pixel_index_array = np.array(decoded_pixel_index_array, dtype="uint8")
 	return numpy_pixel_index_array
 
+
 def get_palette(img):
 	img.seek(0x36)
 	# TODO: This program won't work for BMPs with palettes that don't have an alpha layer, or that don't have exactly 256 palette colors.
@@ -182,7 +183,7 @@ def get_palette(img):
 	return palette
 
 
-def convert_rle8_bmp_to_png(img, input_filepath, output_parent_filepath):
+def convert_rle8_bmp_to_png(img, output_filepath):
 	width = get_bmp_width(img)
 	height = get_bmp_height(img)
 
@@ -193,5 +194,4 @@ def convert_rle8_bmp_to_png(img, input_filepath, output_parent_filepath):
 	img = Image.fromarray(pixel_array, mode="P")
 	img.putpalette(palette)
 
-	output_filepath = output_parent_filepath / Path(*input_filepath.parts[1:]).with_suffix(".png")
 	img.save(output_filepath)
