@@ -65,7 +65,7 @@ def get_decoded_pixel_index_array(rle_bytes, width, height):
 				y -= 1
 			elif special_byte == 1: # End of bitmap.
 				# Makes sure that the 2D array keeps a homogeneous shape. Assumes the palette's first color represents transparency.
-				if not (x == -1 and y == -1): # x == -1 and y == -1 when the "special_byte == 0" end of line if-statement above was reached and y was already equal to 0.
+				if y != -1: # y == -1 when the "special_byte == 0" end of line if-statement above was reached and y was 0.
 					for _ in range(width - x - 1):
 						x += 1
 						decompressed[y].append(0)
